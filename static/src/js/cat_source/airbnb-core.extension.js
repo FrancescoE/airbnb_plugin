@@ -1,8 +1,41 @@
-
-
-
+let md5 = require( "blueimp-md5" );
 (function() {
-    
+    var originalGetContextBefore = UI.getContextBefore;
+    var originalGetContextAfter = UI.getContextAfter;
+    $.extend(UI, {
+        getContextBefore: function(segmentId) {
+            let md5Context = this.getMD5Context(segmentId);
+            if (md5Context) {
+                return md5Context;
+            } else {
+                return originalGetContextBefore.apply(this, segmentId);
+            }
+        },
+        getContextAfter: function(segmentId) {
+            let md5Context = this.getMD5Context(segmentId);
+            if (md5Context) {
+                return md5Context;
+            } else {
+                return originalGetContextAfter.apply(this, segmentId);
+            }
+        },
+        getMD5Context: function ( segmentId ) {
+            let $segment = $('#segment-' + segmentId);
+            let segmentObj = SegmentStore.getSegmentByIdToJS(segmentId, UI.getSegmentFileId($segment));
+            let phraseKeyNote = segmentObj.notes.find((item) => {
+                return item.note.indexOf("Phrase Key") >= 0;
+            });
+            if (phraseKeyNote && phraseKeyNote.note.split(":").length) {
+                let phraseHey = phraseKeyNote.note.split(": ")[1];
+                let source = segmentObj.segment;
+                let textToMd5 = phraseHey + source;
+                return md5(textToMd5)
+            } else {
+                return null;
+            }
+    }
+    });
+
     function overrideTabMessages( SegmentTabMessages ) {
         SegmentTabMessages.prototype.getNotes = function (  ) {
             let notesHtml = [];
